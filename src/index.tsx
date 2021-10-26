@@ -11,6 +11,7 @@ export type OmetriaBasket = {
   currency: string;
   totalPrice: number;
   items: OmetriaBasketItem[];
+  link: string;
 };
 
 type OmetriaReactNativeSdkType = {
@@ -20,7 +21,10 @@ type OmetriaReactNativeSdkType = {
   trackProfileIdentifiedByEmailEvent(email: string): () => void;
   trackProfileDeidentifiedEvent(): () => void;
   trackProductViewedEvent(productId: string): () => void;
-  trackProductListingViewedEvent(): () => void;
+  trackProductListingViewedEvent(
+    listingType: string,
+    listingAttributes: any
+  ): () => void;
   trackWishlistAddedToEvent(productId: string): () => void;
   trackWishlistRemovedFromEvent(productId: string): () => void;
   trackBasketViewedEvent(): () => void;
@@ -35,13 +39,14 @@ type OmetriaReactNativeSdkType = {
   clear(): () => void;
   isLoggingEnabled(enabled: Boolean): Promise<void>;
 
+  onDeepLinkInteracted(): Promise<string>;
+
+  processUniversalLink(url: string): Promise<string>;
+
   // Android only
   onMessageReceived(remoteMessage: String): () => void;
   onNewToken(token: String): () => void;
   onPushTokenRefreshed(token: String): () => void;
-
-  // iOS only
-  onDeepLinkInteracted(): Promise<string>;
 };
 
 export const { OmetriaReactNativeSdk } = NativeModules;

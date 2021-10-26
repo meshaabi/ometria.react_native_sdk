@@ -28,6 +28,7 @@ The easiest way to get Ometria into your React-Native project is by using `npm i
 
 4\. Initialise the library
 --------------------------
+
 To initialise Ometria, you need to enter the API key from **2. Before you begin**.
 
 ```js
@@ -57,8 +58,10 @@ You can enable advanced logging if you want more information on what’s happeni
 ```js
 Ometria.isLoggingEnabled(true);
 ```
+
 5\. Event tracking guide
 ------------------------
+
 You need to be aware of your users’ behaviour on your platforms in order to understand them. Some behaviour is automatically detectable, other events need work from the app developer to track.
 
 Many of these methods have analogous events in a server-to-server API called the [Ometria Data API](https://support.ometria.com/hc/en-gb/articles/360011511017-Data-API-introduction), and through a separate JavaScript API.
@@ -99,6 +102,7 @@ Ometria.trackBasketUpdatedEvent({
   totalPrice: 12.0,
   currency: 'USD',
   items,
+  link: 'link_eg'
 });
 ```
 
@@ -166,6 +170,7 @@ The visitor has viewed a dedicated page, screen or modal with the contents of th
 ```js
 Ometria.trackBasketViewedEvent();
 ```
+
 #### Basket updated
 
 The visitor has changed their shopping basket:
@@ -196,6 +201,7 @@ Ometria.trackBasketUpdatedEvent({
   totalPrice: 12.0,
   currency: 'USD',
   items,
+  link: 'link_eg'
 });
 ```
 
@@ -229,6 +235,7 @@ Ometria.trackOrderCompletedEvent('order_id', {
   totalPrice: 12.0,
   currency: 'USD',
   items,
+  link: 'link_eg'
 });
 ```
 
@@ -309,6 +316,10 @@ An object that describes the contents of a shopping basket.
 * `currency`: (`String`, required) - A string representing the currency in ISO currency format. e.g. `"USD"`, `"GBP"`
 * `price`: (`float`, required) - A float value representing the pricing.
 * `items`: (`Array[OmetriaBasketItem]`) - An array containing the item entries in this basket.
+* `link`: (`String`) - A deeplink to the web or in-app page for this basket. Can be used in
+ a notification sent to the user, e.g. "Forgot to check out? Here's
+ your basket to continue: 'https://eg.com/basket_url'". Following that link should take
+ them straight to the basket page.
 
 ### `OmetriaBasketItem`
 
@@ -383,6 +394,7 @@ Before continuing, you must have already configured:
 
 * The Ometria SDK
 * Firebase
+
 #### iOS
 
 On iOS you have to request push notifications permissions using Firebase Messaging, e.g.:
@@ -404,6 +416,7 @@ This way your app will start receiving notifications from Ometria. Handling thos
 #### Android
 
 On Android you have to forward the Push Notification token, e.g.:
+
 ```js
 import messaging from '@react-native-firebase/messaging';
 // ...
@@ -421,7 +434,6 @@ messaging().onMessage((remoteMessage) => {
 ```
 
 For a complete example and use case please consult the sample app.
-
 
 ### Handling interaction with notifications that contain URLs
 
@@ -443,6 +455,7 @@ Ometria.onDeepLinkInteracted().then((notificationURL) => {
 ```
 
 ### Enabling rich content notifications (iOS only)
+
 For **iOS** you have to integrate the rich content notification support directly in the Xcode project.
 
 Starting with iOS 12.0, Apple enabled regular applications to receive and display notifications that contain media content such as images.
@@ -504,3 +517,78 @@ class NotificationService: OmetriaNotificationServiceExtension {
 ```
 
 Now you can receive notifications from Ometria and you are also able to see the images that are attached to your notifications.
+
+7\. App links guide
+----------------------------
+
+Ometria sends personalised emails with URLs that point back to your website. In order to open these URLs inside your application, make sure you follow this guide.
+
+### Pre-requisites
+
+First, make sure you have an SSL-enabled Ometria tracking domain set up for your account. You may already have this for
+your email campaigns, but if not ask your Ometria contact to set one up, and they should provide you with the domain.
+
+### Handle App Links inside your application
+
+In order to handle the links inside your application you need to use
+
+  ```javascript
+  onDeepLinkInteracted(): Promise<string>
+  ```
+
+this promise resolves into an URL string extracted from the notification received via Firebase.
+
+### Process App Links inside your application
+
+The final step is to process the URLs in your app and take the user to the appropriate sections of the app. Note that
+you need to implement the mapping between your website's URLs and the screens of your app.
+
+See also [Linking push notifications to app screens](https://support.ometria.com/hc/en-gb/articles/4402644059793-Linking-push-notifications-to-app-screens).
+
+If you are dealing with normal URLs pointing to your website, you can decompose it into different path components and parameters. This will allow you to source the required information to navigate through to the correct screen in your app.
+
+In order for React-Native to identify that an url is opening the app you need to adjust AppDelegate.m file from ios folder
+add the following code to AppDelegate.m from ./ios/ProjectName
+
+```objective-c
+- (BOOL)application:(UIApplication *)application openURL:(NSURL *)url
+  sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
+{
+  return [RCTLinkingManager application:application openURL:url
+                      sourceApplication:sourceApplication annotation:annotation];
+}
+
+// Only if your app is using [Universal Links](https://developer.apple.com/library/prerelease/ios/documentation/General/Conceptual/AppSearch/UniversalLinks.html).
+- (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity
+ restorationHandler:(void (^)(NSArray * _Nullable))restorationHandler
+{
+ return [RCTLinkingManager application:application
+                  continueUserActivity:userActivity
+                    restorationHandler:restorationHandler];
+}
+```
+
+For Android please add the following:
+
+```xml
+<intent-filter android:autoVerify="true">
+    <action android:name="android.intent.action.VIEW" />
+
+    <category android:name="android.intent.category.DEFAULT" />
+    <category android:name="android.intent.category.BROWSABLE" />
+
+    <data
+        android:host="clickom.omdemo.net"
+        android:scheme="https" />
+</intent-filter>
+```
+
+to /android/app/src/main/AndroidManifest.xml
+
+However, Ometria emails contain obfuscated tracking URLs, and these need to be converted back to the original URL, pointing to your website, before you can map the URL to an app screen. To do this, the SDK provides a method called `processUniversalLink`:
+
+```javascript
+  processUniversalLink(url: string): Promise<string>
+```
+
+If you have done everything correctly, the app should now be able to open app links and allow you to handle them inside the app.
