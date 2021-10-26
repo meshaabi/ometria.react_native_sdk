@@ -3,7 +3,10 @@ import Foundation
 
 @objc(OmetriaReactNativeSdk)
 class OmetriaReactNativeSdk: NSObject, OmetriaNotificationInteractionDelegate {
-    
+    func handleOmetriaNotificationInteraction(_ notification: OmetriaNotification) {
+        //
+    }
+
     var deeplinkInteractionResolver: RCTPromiseResolveBlock?
     var deeplinkInteractionRejecter: RCTPromiseRejectBlock?
 
